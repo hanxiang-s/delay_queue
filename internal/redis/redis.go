@@ -2,14 +2,13 @@ package redis
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/yasin-wu/delay_queue/v2/internal/logger"
+	"github.com/hanxiang-s/delay_queue/internal/logger"
 
-	"github.com/yasin-wu/delay_queue/v2/pkg"
+	"github.com/hanxiang-s/delay_queue/pkg"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -22,47 +21,44 @@ type Client struct {
 	logger     logger.Logger
 }
 
-func New(keyPrefix string, batchLimit int64, redisOptions *pkg.Options) *Client {
+func New(keyPrefix string, batchLimit int64, opt *redis.Options) *Client {
 	return &Client{
 		keyPrefix:  keyPrefix,
 		batchLimit: batchLimit,
-		client:     redis.NewClient((*redis.Options)(redisOptions)),
+		client:     redis.NewClient(opt),
 		ctx:        context.Background(),
 		logger:     logger.DefaultLogger,
 	}
 }
 
-func (c *Client) Zadd(job pkg.DelayJob) error {
+func (c *Client) ZAdd(job pkg.DelayJob) error {
+	if job.Arg == nil {
+		return errors.New("job arg is nil")
+	}
 	key := c.FormatKey(job.ID)
 	delayTime := job.DelayTime
 	job.DelayTime = -1
-	member, err := json.Marshal(job)
-	if err != nil {
-		return err
-	}
-	if len(member) == 0 {
-		return errors.New("job is empty")
-	}
 	var z redis.Z
-	z.Member = member
+	z.Member = job.Arg
 	z.Score = float64(delayTime + time.Now().Unix())
-	if job.Type == pkg.DelayTypeDate {
+	switch job.Type {
+	case pkg.DelayTypeDuration:
+		z.Score = float64(delayTime + time.Now().Unix())
+	case pkg.DelayTypeDate:
 		z.Score = float64(delayTime)
+	default:
+		return errors.New("job type is not supported")
 	}
 	return c.client.ZAdd(c.ctx, key, &z).Err()
 }
 
-func (c *Client) Zremove(job pkg.DelayJob) error {
+func (c *Client) ZRem(job pkg.DelayJob) error {
+	if job.Arg == nil {
+		return errors.New("job arg is nil")
+	}
 	key := c.FormatKey(job.ID)
 	job.DelayTime = -1
-	member, err := json.Marshal(job)
-	if err != nil {
-		return err
-	}
-	if len(member) == 0 {
-		return errors.New("job is empty")
-	}
-	return c.client.ZRem(c.ctx, key, member).Err()
+	return c.client.ZRem(c.ctx, key, job.Arg).Err()
 }
 
 func (c *Client) GetBatch(key string) ([]redis.Z, int64, error) {
@@ -78,23 +74,17 @@ func (c *Client) GetBatch(key string) ([]redis.Z, int64, error) {
 	if len(redisZs) > 0 {
 		lastScore = int64(redisZs[len(redisZs)-1].Score)
 	}
-	//if err != nil || len(redisZs) == 0 {
-	//	return redisZs, lastScore, err
-	//}
-	//lastScore = int64(redisZs[len(redisZs)-1].Score)
-	//opt.Max = fmt.Sprintf("%d", lastScore)
-	//redisZs, err = c.client.ZRangeByScoreWithScores(c.ctx, key, &opt).Result()
 	return redisZs, lastScore, err
 }
 
 func (c *Client) ClearBatch(key string, lastScore int64) {
 	if err := c.client.ZRemRangeByScore(c.ctx, key, "0", fmt.Sprintf("%d", lastScore)).Err(); err != nil {
-		c.logger.Errorf("clear batch failed , error:%s", err.Error())
+		c.logger.Errorf("clear batch failed: %v", err)
 	}
 }
 
-func (c *Client) FormatKey(name string) string {
-	return fmt.Sprintf("%s:%s", c.keyPrefix, name)
+func (c *Client) FormatKey(jobID string) string {
+	return fmt.Sprintf("%s:%s", c.keyPrefix, jobID)
 }
 
 func (c *Client) SetLogger(logger logger.Logger) {

@@ -1,59 +1,61 @@
 [![OSCS Status](https://www.oscs1024.com/platform/badge/yasin-wu/delay_queue.svg?size=small)](https://www.murphysec.com/dr/kFJ0vHLhJQTz8wiubq)
 ## 介绍
 
-delay queue 是基于Redis Zset实现的Golang版延时队列。以时间戳作为Score, 主动轮询小于当前时间的元素。新增延迟类型支持：支持延迟多少秒和延迟到具体时间。
-
+delay queue是基于Redis Zset+Cron实现的Golang版延时队列。
+实现方案是任务cron定时执行时主动轮询小于当前时间的元素, 取出符合条件元素执行任务，完成任务后删除该元素。
+支持延迟多少秒和延迟到具体时间执行。
+说明：redis zset key和cron id都是keyPrefix:jobID
 ## 安装
 
 ```
-go get -u github.com/yasin-wu/delay_queue
+go get -u github.com/hanxiang-s/delay_queue
 ```
 
 推荐使用go.mod
 
-```
-require github.com/yasin-wu/delay_queue/v2 v2.1.1
-```
-
 ## 使用
 
 ```go
-var redisOptions = &delayqueue.RedisOptions{Addr: "47.108.155.25:6379", Password: "yasinwu"}
-
 type JobActionSMS struct{}
 
-var _ pkg.JobBaseAction = (*JobActionSMS)(nil)
-
-func (JobActionSMS) ID() string {
+func (j *JobActionSMS) ID() string {
     return "JobActionSMS"
 }
 
-func (JobActionSMS) Execute(args []any) error {
-    for _, arg := range args {
-        if phoneNumber, ok := arg.(string); ok {
-            fmt.Printf("sending sms to %s,time:%v\n", phoneNumber, time.Now())
-        }
-    }
+func (j *JobActionSMS) Cron() string {
+    return "@every 1s"
+}
+
+func (j *JobActionSMS) Execute(arg any) error {
+    phone, _ := arg.(string)
+    fmt.Printf("sending sms to %s,time:%v\n", phone, time.Now().Format("2006-01-02 15:04:05"))
     return nil
 }
 
 func main() {
-    dq := dqueue.New("test-yasin", 0, redisOptions)
-    err := dq.Register(JobActionSMS{})
-    if err != nil {
+    redisOpt := &redis.Options{Addr: "127.0.0.1:6379", Password: "password"}
+    cli := dq.New("test", 0, redisOpt)
+    if err := cli.Register(&JobActionSMS{}); err != nil {
         log.Fatal(err)
     }
-    dq.StartBackground()
-    fmt.Printf("add job:%v\n", time.Now())
-    err = dq.AddJob(pkg.DelayJob{
+    fmt.Println("add job: ", time.Now().Format("2006-01-02 15:04:05"))
+    if err := cli.AddJob(pkg.DelayJob{
+		ID:        (&JobActionSMS{}).ID(),
+        Type:      pkg.DelayTypeDuration, //延迟N秒执行
+        DelayTime: 10,                    //延迟秒数
+        Arg:       "138****0000",
+    }); err != nil {
+        log.Fatal(err)
+    }
+    if err := cli.AddJob(pkg.DelayJob{
         ID:        (&JobActionSMS{}).ID(),
-        DelayTime: 10,
-        Args:      []any{"181****9331"},
-    })
-    if err != nil {
+        Type:      pkg.DelayTypeDate,      //延迟到具体时间执行
+        DelayTime: time.Now().Unix() + 10, //执行时间的秒时间戳
+        Arg:       "138****1111",
+	}); err != nil {
         log.Fatal(err)
     }
-    time.Sleep(20 * time.Second)
+    time.Sleep(time.Second * 30)
 }
 
 ```

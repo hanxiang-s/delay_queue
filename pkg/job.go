@@ -1,31 +1,8 @@
 package pkg
 
-import "github.com/go-redis/redis/v8"
-
-type JobBaseAction interface {
-	ID() string
-	Execute(args []any) error
-}
-
-/**
- * @author: yasinWu
- * @date: 2022/1/13 13:23
- * @description: 延迟任务
- */
 type DelayJob struct {
-	ID        string    // 任务ID
-	Type      DelayType // 时间类型:0-延迟多少秒执行,1-具体执行时间(时间戳:秒)
-	DelayTime int64     // 延迟执行时间,单位:秒
-	Args      []any     // 任务执行参数
-
+	ID        string    // 任务ID，需保证唯一，keyPrefix+ID作为cron的ID：BaseAction.ID
+	Type      DelayType // 时间类型: 0-延迟N秒执行,1-具体执行时间
+	DelayTime int64     // 延迟时间: type=0时为延迟秒数,type=1时为执行秒时间戳
+	Arg       any       // 任务执行参数，以其作为redis zset的member
 }
-
-// DelayType 延迟任务类型
-type DelayType int
-
-const (
-	DelayTypeDuration DelayType = iota // 延迟多少秒执行
-	DelayTypeDate                      // 具体执行时间(时间戳:秒)
-)
-
-type Options redis.Options
