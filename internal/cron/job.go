@@ -9,7 +9,7 @@ import (
 type Job struct {
 	Logger   logger.Logger
 	RedisCli *redis.Client
-	Action   pkg.BaseAction
+	Action   pkg.JobBaseAction
 }
 
 func (j *Job) Run() {

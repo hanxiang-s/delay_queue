@@ -34,7 +34,7 @@ func New(keyPrefix string, batchLimit int64, opt *redis.Options) *DelayQueue {
 	return delayQueue
 }
 
-func (dq *DelayQueue) Register(action pkg.BaseAction) error {
+func (dq *DelayQueue) Register(action pkg.JobBaseAction) error {
 	cronJob := &cron.Job{
 		Logger:   dq.logger,
 		RedisCli: dq.redisCli,

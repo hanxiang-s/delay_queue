@@ -14,17 +14,20 @@ import (
 
 type JobActionSMS struct{}
 
+// ID 任务ID
 func (j *JobActionSMS) ID() string {
 	return "JobActionSMS"
 }
 
+// Cron 任务定时执行cron，cron执行时从zset中获取0<score<=当前时间的member去执行任务
 func (j *JobActionSMS) Cron() string {
 	return "@every 1s"
 }
 
+// Execute 任务执行方法
 func (j *JobActionSMS) Execute(arg any) error {
 	phone, _ := arg.(string)
-	fmt.Printf("sending sms to %s,time: %v\n", phone, time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Printf("sending sms to %s,time:%v\n", phone, time.Now().Format("2006-01-02 15:04:05"))
 	return nil
 }
 
