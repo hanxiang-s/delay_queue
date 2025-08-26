@@ -3,6 +3,7 @@ package pkg
 type JobBaseAction interface {
 	ID() string            //任务ID
 	Cron() string          //任务定时执行cron, cron执行时从zset中获取0<score<=当前时间的member
+	Ticker() int           //任务定时执行ticker, 单位秒, 0表示不开启定时执行
 	Execute(arg any) error //任务执行方法
 }
 

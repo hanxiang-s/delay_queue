@@ -52,13 +52,11 @@ func (c *Client) ZAdd(job pkg.DelayJob) error {
 	return c.client.ZAdd(c.ctx, key, &z).Err()
 }
 
-func (c *Client) ZRem(job pkg.DelayJob) error {
-	if job.Arg == nil {
+func (c *Client) ZRem(key string, arg any) error {
+	if arg == nil {
 		return errors.New("job arg is nil")
 	}
-	key := c.FormatKey(job.ID)
-	job.DelayTime = -1
-	return c.client.ZRem(c.ctx, key, job.Arg).Err()
+	return c.client.ZRem(c.ctx, key, arg).Err()
 }
 
 func (c *Client) GetBatch(key string) ([]redis.Z, int64, error) {

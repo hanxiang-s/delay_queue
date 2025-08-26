@@ -4,6 +4,7 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"github.com/hanxiang-s/delay_queue/internal/cron"
+	"github.com/hanxiang-s/delay_queue/internal/job"
 	rd "github.com/hanxiang-s/delay_queue/internal/redis"
 
 	"github.com/hanxiang-s/delay_queue/pkg"
@@ -35,12 +36,24 @@ func New(keyPrefix string, batchLimit int64, opt *redis.Options) *DelayQueue {
 }
 
 func (dq *DelayQueue) Register(action pkg.JobBaseAction) error {
-	cronJob := &cron.Job{
-		Logger:   dq.logger,
-		RedisCli: dq.redisCli,
-		Action:   action,
+	var err error
+	switch {
+	case action.Cron() != "":
+		cronJob := &job.CronJob{
+			Logger:   dq.logger,
+			RedisCli: dq.redisCli,
+			Action:   action,
+		}
+		_, err = dq.cron.Add(dq.redisCli.FormatKey(action.ID()), action.Cron(), cronJob)
+	case action.Ticker() != 0:
+		tickerJob := &job.TickerJob{
+			Logger:   dq.logger,
+			RedisCli: dq.redisCli,
+			Action:   action,
+			Interval: action.Ticker(),
+		}
+		go tickerJob.Run()
 	}
-	_, err := dq.cron.Add(dq.redisCli.FormatKey(action.ID()), action.Cron(), cronJob)
 	return err
 }
 
@@ -49,7 +62,7 @@ func (dq *DelayQueue) AddJob(job pkg.DelayJob) error {
 }
 
 func (dq *DelayQueue) RemoveJob(job pkg.DelayJob) error {
-	return dq.redisCli.ZRem(job)
+	return dq.redisCli.ZRem(dq.redisCli.FormatKey(job.ID), job.Arg)
 }
 
 func (dq *DelayQueue) SetLogger(logger logger.Logger) {

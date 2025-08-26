@@ -24,6 +24,11 @@ func (j *JobActionSMS) Cron() string {
 	return "@every 1s"
 }
 
+// Cron 任务定时执行cron，cron执行时从zset中获取0<score<=当前时间的member去执行任务
+func (j *JobActionSMS) Ticker() int {
+	return 1
+}
+
 // Execute 任务执行方法
 func (j *JobActionSMS) Execute(arg any) error {
 	phone, _ := arg.(string)

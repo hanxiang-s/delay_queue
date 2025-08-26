@@ -1,4 +1,4 @@
-package cron
+package job
 
 import (
 	"github.com/hanxiang-s/delay_queue/internal/logger"
@@ -6,13 +6,13 @@ import (
 	"github.com/hanxiang-s/delay_queue/pkg"
 )
 
-type Job struct {
+type CronJob struct {
 	Logger   logger.Logger
 	RedisCli *redis.Client
 	Action   pkg.JobBaseAction
 }
 
-func (j *Job) Run() {
+func (j *CronJob) Run() {
 	key := j.RedisCli.FormatKey(j.Action.ID())
 	batch, lastScore, err := j.RedisCli.GetBatch(key)
 	if err != nil {
