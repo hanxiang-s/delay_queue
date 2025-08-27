@@ -1,8 +1,8 @@
 [![OSCS Status](https://www.oscs1024.com/platform/badge/yasin-wu/delay_queue.svg?size=small)](https://www.murphysec.com/dr/kFJ0vHLhJQTz8wiubq)
 ## 介绍
 
-delay queue是基于Redis Zset+Cron实现的Golang版延时队列。
-实现方案是任务cron定时执行时主动轮询小于当前时间的元素, 取出符合条件元素执行任务，完成任务后删除该元素。
+delay queue是基于Redis Zset+Cron/Ticker实现的Golang版延时队列。
+实现方案是任务cron/ticker定时执行时主动轮询小于当前时间的元素, 取出符合条件元素执行任务，完成任务后删除该元素。
 支持延迟多少秒和延迟到具体时间执行。
 说明：redis zset key和cron id都是keyPrefix:jobID
 ## 安装
