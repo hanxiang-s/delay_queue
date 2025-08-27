@@ -22,7 +22,7 @@ func (j *TickerJob) Run() {
 		batch, lastScore, err := j.RedisCli.GetBatch(key)
 		if err != nil {
 			j.Logger.Errorf("get batch failed: %v", err)
-			return
+			continue
 		}
 		isClear := len(batch) != 0
 		for _, v := range batch {
