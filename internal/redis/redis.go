@@ -75,10 +75,8 @@ func (c *Client) GetBatch(key string) ([]redis.Z, int64, error) {
 	return redisZs, lastScore, err
 }
 
-func (c *Client) ClearBatch(key string, lastScore int64) {
-	if err := c.client.ZRemRangeByScore(c.ctx, key, "0", fmt.Sprintf("%d", lastScore)).Err(); err != nil {
-		c.logger.Errorf("clear batch failed: %v", err)
-	}
+func (c *Client) ClearBatch(key string, lastScore int64) error {
+	return c.client.ZRemRangeByScore(c.ctx, key, "0", fmt.Sprintf("%d", lastScore)).Err()
 }
 
 func (c *Client) FormatKey(jobID string) string {
