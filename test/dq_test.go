@@ -19,14 +19,20 @@ func (j *JobActionSMS) ID() string {
 	return "JobActionSMS"
 }
 
-// Cron 任务定时执行cron，cron执行时从zset中获取0<score<=当前时间的member去执行任务
-func (j *JobActionSMS) Cron() string {
-	return "@every 1s"
-}
+//// Scheduler 任务定时执行，执行时从zset中获取0<score<=当前时间的member去执行任务
+//func (j *JobActionSMS) Scheduler() pkg.Scheduler {
+//	return pkg.Scheduler{
+//		Type:  pkg.SchedulerTypeCron,
+//		Value: "@every 1s",
+//	}
+//}
 
-// Cron 任务定时执行cron，cron执行时从zset中获取0<score<=当前时间的member去执行任务
-func (j *JobActionSMS) Ticker() int {
-	return 1
+// Scheduler 任务定时执行，执行时从zset中获取0<score<=当前时间的member去执行任务
+func (j *JobActionSMS) Scheduler() pkg.Scheduler {
+	return pkg.Scheduler{
+		Type:  pkg.SchedulerTypeTicker,
+		Value: "1",
+	}
 }
 
 // Execute 任务执行方法
@@ -37,7 +43,7 @@ func (j *JobActionSMS) Execute(arg any) error {
 }
 
 func TestDelayQueue(t *testing.T) {
-	redisOpt := &redis.Options{Addr: "127.0.0.1:6379", Password: "password"}
+	redisOpt := &redis.Options{Addr: "10.8.27.151:30379", Password: "TopsecCdu_1130", DB: 14}
 	cli := dq.New("test", 0, redisOpt)
 	if err := cli.Register(&JobActionSMS{}); err != nil {
 		log.Fatal(err)
