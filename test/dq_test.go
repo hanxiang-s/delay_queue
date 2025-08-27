@@ -43,7 +43,7 @@ func (j *JobActionSMS) Execute(arg any) error {
 }
 
 func TestDelayQueue(t *testing.T) {
-	redisOpt := &redis.Options{Addr: "10.8.27.151:30379", Password: "TopsecCdu_1130", DB: 14}
+	redisOpt := &redis.Options{Addr: "127.0.0.1:6379", Password: "password"}
 	cli := dq.New("test", 0, redisOpt)
 	if err := cli.Register(&JobActionSMS{}); err != nil {
 		log.Fatal(err)
