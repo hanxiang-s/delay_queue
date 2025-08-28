@@ -16,7 +16,7 @@ type TickerJob struct {
 }
 
 func (j *TickerJob) Run() {
-	j.Logger.Infof("ticker job start")
+	j.Logger.Infof("delay queue ticker job start")
 	ticker := time.NewTicker(time.Second * time.Duration(j.Interval))
 	for range ticker.C {
 		key := j.RedisCli.FormatKey(j.Action.ID())
@@ -39,5 +39,5 @@ func (j *TickerJob) Run() {
 			}
 		}
 	}
-	j.Logger.Infof("ticker job stop")
+	j.Logger.Infof("delay queue ticker job stop")
 }
