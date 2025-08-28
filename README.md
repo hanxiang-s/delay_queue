@@ -2,9 +2,10 @@
 ## 介绍
 
 delay queue是基于Redis Zset+Cron/Ticker实现的Golang版延时队列。
-实现方案是任务cron/ticker定时执行时主动轮询小于当前时间的元素, 取出符合条件元素执行任务，完成任务后删除该元素。
-支持延迟多少秒和延迟到具体时间执行。
+实现方案是任务定时执行时主动轮询小于当前时间的元素, 取出符合条件元素执行任务，完成任务后删除该元素。
+支持延迟多少秒和延迟到具体时间执行，支持cron和ticker定时执行。
 说明：redis zset key和cron id都是keyPrefix:jobID
+dq.New方法中的batchLimit是每次从zset中获取的元素数量，根据实际情况调整，设置为0则默认10000
 ## 安装
 
 ```
@@ -42,8 +43,8 @@ func (j *JobActionSMS) Scheduler() pkg.Scheduler {
  */
 
 // Execute 任务执行方法
-func (j *JobActionSMS) Execute(arg any) error {
-    phone, _ := arg.(string)
+func (j *JobActionSMS) Execute(member any) error {
+    phone, _ := member.(string)
     fmt.Printf("sending sms to %s,time:%v\n", phone, time.Now().Format("2006-01-02 15:04:05"))
     return nil
 }
@@ -59,7 +60,7 @@ func main() {
 		ID:        (&JobActionSMS{}).ID(),
         Type:      pkg.DelayTypeDuration, //延迟N秒执行
         DelayTime: 10,                    //延迟秒数
-        Arg:       "138****0000",
+        Member:    "138****0000",
     }); err != nil {
         log.Fatal(err)
     }
@@ -67,7 +68,7 @@ func main() {
         ID:        (&JobActionSMS{}).ID(),
         Type:      pkg.DelayTypeDate,      //延迟到具体时间执行
         DelayTime: time.Now().Unix() + 10, //执行时间的秒时间戳
-        Arg:       "138****1111",
+        Member:    "138****1111",
 	}); err != nil {
         log.Fatal(err)
     }

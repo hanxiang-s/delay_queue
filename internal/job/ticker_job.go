@@ -16,24 +16,28 @@ type TickerJob struct {
 }
 
 func (j *TickerJob) Run() {
+	j.Logger.Infof("ticker job start")
 	ticker := time.NewTicker(time.Second * time.Duration(j.Interval))
 	for range ticker.C {
 		key := j.RedisCli.FormatKey(j.Action.ID())
-		batch, lastScore, err := j.RedisCli.GetBatch(key)
+		batch, _, err := j.RedisCli.GetBatch(key)
 		if err != nil {
 			j.Logger.Errorf("get batch failed: %v", err)
 			continue
 		}
-		isClear := len(batch) != 0
+		var members []any
 		for _, v := range batch {
-			if err = j.Action.Execute(v.Member); err != nil {
+			if err = j.Action.Execute(v.Member); err == nil {
+				members = append(members, v.Member)
+			} else {
 				j.Logger.Errorf("job execute failed: %v", err)
 			}
 		}
-		if isClear {
-			if err = j.RedisCli.ClearBatch(key, lastScore); err != nil {
-				j.Logger.Errorf("job clear batch failed: %v", err)
+		if len(members) > 0 {
+			if err = j.RedisCli.ZRem(key, members); err != nil {
+				j.Logger.Errorf("job zrem members failed: %v", err)
 			}
 		}
 	}
+	j.Logger.Infof("ticker job stop")
 }

@@ -22,7 +22,7 @@ type DelayQueue struct {
 }
 
 // New 创建延迟队列
-// redis key=keyPrefix:jobID
+// redis key=keyPrefix:jobID, batchLimit：每次根据0<score<当时时间取出来的member数量，根据实际情况设置
 func New(keyPrefix string, batchLimit int64, opt *redis.Options) *DelayQueue {
 	if keyPrefix == "" {
 		keyPrefix = pkg.DefaultKeyPrefix
@@ -72,7 +72,7 @@ func (dq *DelayQueue) AddJob(job pkg.DelayJob) error {
 }
 
 func (dq *DelayQueue) RemoveJob(job pkg.DelayJob) error {
-	return dq.redisCli.ZRem(dq.redisCli.FormatKey(job.ID), job.Arg)
+	return dq.redisCli.ZRem(dq.redisCli.FormatKey(job.ID), job.Member)
 }
 
 func (dq *DelayQueue) SetLogger(logger logger.Logger) {

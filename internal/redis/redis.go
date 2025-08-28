@@ -32,14 +32,14 @@ func New(keyPrefix string, batchLimit int64, opt *redis.Options) *Client {
 }
 
 func (c *Client) ZAdd(job pkg.DelayJob) error {
-	if job.Arg == nil {
+	if job.Member == nil {
 		return errors.New("job arg is nil")
 	}
 	key := c.FormatKey(job.ID)
 	delayTime := job.DelayTime
 	job.DelayTime = -1
 	var z redis.Z
-	z.Member = job.Arg
+	z.Member = job.Member
 	z.Score = float64(delayTime + time.Now().Unix())
 	switch job.Type {
 	case pkg.DelayTypeDuration:
@@ -52,11 +52,11 @@ func (c *Client) ZAdd(job pkg.DelayJob) error {
 	return c.client.ZAdd(c.ctx, key, &z).Err()
 }
 
-func (c *Client) ZRem(key string, arg any) error {
-	if arg == nil {
-		return errors.New("job arg is nil")
+func (c *Client) ZRem(key string, members any) error {
+	if members == nil {
+		return errors.New("members is nil")
 	}
-	return c.client.ZRem(c.ctx, key, arg).Err()
+	return c.client.ZRem(c.ctx, key, members).Err()
 }
 
 func (c *Client) GetBatch(key string) ([]redis.Z, int64, error) {
@@ -73,10 +73,6 @@ func (c *Client) GetBatch(key string) ([]redis.Z, int64, error) {
 		lastScore = int64(redisZs[len(redisZs)-1].Score)
 	}
 	return redisZs, lastScore, err
-}
-
-func (c *Client) ClearBatch(key string, lastScore int64) error {
-	return c.client.ZRemRangeByScore(c.ctx, key, "0", fmt.Sprintf("%d", lastScore)).Err()
 }
 
 func (c *Client) FormatKey(jobID string) string {

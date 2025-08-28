@@ -36,8 +36,8 @@ func (j *JobActionSMS) Scheduler() pkg.Scheduler {
 }
 
 // Execute 任务执行方法
-func (j *JobActionSMS) Execute(arg any) error {
-	phone, _ := arg.(string)
+func (j *JobActionSMS) Execute(member any) error {
+	phone, _ := member.(string)
 	fmt.Printf("sending sms to %s,time:%v\n", phone, time.Now().Format("2006-01-02 15:04:05"))
 	return nil
 }
@@ -53,7 +53,7 @@ func TestDelayQueue(t *testing.T) {
 		ID:        (&JobActionSMS{}).ID(),
 		Type:      pkg.DelayTypeDuration, //延迟N秒执行
 		DelayTime: 10,                    //延迟秒数
-		Arg:       "138****0000",
+		Member:    "138****0000",
 	}); err != nil {
 		log.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestDelayQueue(t *testing.T) {
 		ID:        (&JobActionSMS{}).ID(),
 		Type:      pkg.DelayTypeDate,      //延迟到具体时间执行
 		DelayTime: time.Now().Unix() + 10, //执行时间的秒时间戳
-		Arg:       "138****1111",
+		Member:    "138****1111",
 	}); err != nil {
 		log.Fatal(err)
 	}
