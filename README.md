@@ -1,11 +1,13 @@
-[![OSCS Status](https://www.oscs1024.com/platform/badge/yasin-wu/delay_queue.svg?size=small)](https://www.murphysec.com/dr/kFJ0vHLhJQTz8wiubq)
+[![OSCS Status](https://www.oscs1024.com/platform/badge/hanxiang-s/delay_queue.svg?size=small)](https://www.murphysec.com/dr/kFJ0vHLhJQTz8wiubq)
 ## 介绍
 
 delay queue是基于Redis Zset+Cron/Ticker实现的Golang版延时队列。
-实现方案是任务定时执行时主动轮询小于当前时间的元素, 取出符合条件元素执行任务，完成任务后删除该元素。
-支持延迟多少秒和延迟到具体时间执行，支持cron和ticker定时执行。
-说明：redis zset key和cron id都是keyPrefix:jobID
-dq.New方法中的batchLimit是每次从zset中获取的元素数量，根据实际情况调整，设置为0则默认10000
+- 实现方案：任务定时执行时主动轮询小于当前时间的元素, 取出符合条件元素执行任务，完成任务后删除该元素。
+- 延时执行：支持延迟多少秒和延迟到具体时间（秒时间戳）执行。
+- 定时执行：支持cron和ticker定时执行。
+- redis key: keyPrefix:jobID
+- cron id: keyPrefix:jobID:cron
+- batchLimit: dq.New方法中的batchLimit是每次从zset中获取的元素数量，根据实际情况调整，设置为0则默认10000
 ## 安装
 
 ```
@@ -24,7 +26,7 @@ func (j *JobActionSMS) ID() string {
     return "JobActionSMS"
 }
 
-// Scheduler 任务定时执行，执行时从zset中获取0<score<=当前时间的member去执行任务
+// Scheduler 任务定时执行(cron方案)，执行时从zset中获取0<score<=当前时间的member去执行任务
 func (j *JobActionSMS) Scheduler() pkg.Scheduler {
     return pkg.Scheduler{
         Type:  pkg.SchedulerTypeCron,
@@ -33,14 +35,14 @@ func (j *JobActionSMS) Scheduler() pkg.Scheduler {
 }
 
 /*
-// Scheduler 任务定时执行，执行时从zset中获取0<score<=当前时间的member去执行任务
+// Scheduler 任务定时执行(ticker方案)，执行时从zset中获取0<score<=当前时间的member去执行任务
 func (j *JobActionSMS) Scheduler() pkg.Scheduler {
     return pkg.Scheduler{
         Type:  pkg.SchedulerTypeTicker,
         Value: "1",
     }
 }
- */
+*/
 
 // Execute 任务执行方法
 func (j *JobActionSMS) Execute(member any) error {
