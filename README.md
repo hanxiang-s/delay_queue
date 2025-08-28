@@ -6,7 +6,7 @@ delay queue是基于Redis Zset+Cron/Ticker实现的Golang版延时队列。
 - 延时执行：支持延迟多少秒和延迟到具体时间（秒时间戳）执行。
 - 定时执行：支持cron和ticker定时执行。
 - redis key: keyPrefix:jobID
-- cron id: keyPrefix:jobID:cron
+- cron id: keyPrefix:jobID
 - batchLimit: dq.New方法中的batchLimit是每次从zset中获取的元素数量，根据实际情况调整，设置为0则默认10000
 ## 安装
 
