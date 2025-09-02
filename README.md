@@ -4,7 +4,7 @@
 delay queue是基于Redis Zset+Cron/Ticker实现的Golang版延时队列。
 - 实现方案：任务定时执行时主动轮询小于当前时间的元素, 取出符合条件元素执行任务，完成任务后删除该元素。
 - 延时执行：支持延迟多少秒和延迟到具体时间（秒时间戳）执行。
-- 定时执行：支持cron和ticker定时执行。
+- 定时执行：支持cron和ticker定时执行，cron在每次执行时会开启一个协程，因此该方案存在执行方法Execute方法执行很慢时协程堆积问题。
 - redis key: keyPrefix:jobID
 - cron id: keyPrefix:jobID
 - batchLimit: dq.New方法中的batchLimit是每次从zset中获取的元素数量，根据实际情况调整，设置为0则默认10000
@@ -19,6 +19,7 @@ go get -u github.com/hanxiang-s/delay_queue
 ## 使用
 
 ```go
+
 type JobActionSMS struct{}
 
 // ID 任务ID
@@ -26,7 +27,7 @@ func (j *JobActionSMS) ID() string {
     return "JobActionSMS"
 }
 
-// Scheduler 任务定时执行(cron方案)，执行时从zset中获取0<score<=当前时间的member去执行任务
+// Scheduler 任务定时执行(cron方案)，value为cron表达式，执行时从zset中获取0<score<=当前时间的member去执行任务
 func (j *JobActionSMS) Scheduler() pkg.Scheduler {
     return pkg.Scheduler{
         Type:  pkg.SchedulerTypeCron,
@@ -35,7 +36,7 @@ func (j *JobActionSMS) Scheduler() pkg.Scheduler {
 }
 
 /*
-// Scheduler 任务定时执行(ticker方案)，执行时从zset中获取0<score<=当前时间的member去执行任务
+// Scheduler 任务定时执行(ticker方案)，value为时间间隔，单位秒，执行时从zset中获取0<score<=当前时间的member去执行任务
 func (j *JobActionSMS) Scheduler() pkg.Scheduler {
     return pkg.Scheduler{
         Type:  pkg.SchedulerTypeTicker,
